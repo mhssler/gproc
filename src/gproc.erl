@@ -1,3 +1,12 @@
+%% Ask if I should
+%%  - Remove variable names in function name args
+%%  - Add space around '::' to avoid monstrosities like
+%%      Arg::Continuation | sel_pattern(),
+%%      Continuation::ets:continuation()
+%%  - Only use one of any() and term()
+
+%% Timeout::integer() | infinity -> timeout()
+%% 
 %% -*- erlang-indent-level: 4; indent-tabs-mode: nil -*-
 %% --------------------------------------------------
 %% This file is provided to you under the Apache License,
@@ -191,204 +200,175 @@
 
 -record(state, {}).
 
-%% @spec () -> {ok, pid()}
-%%
 %% @doc Starts the gproc server.
 %%
 %% This function is intended to be called from gproc_sup, as part of
 %% starting the gproc application.
 %% @end
+-spec start_link() -> {ok, pid()}.
 start_link() ->
     _ = create_tabs(),
     SpawnOpts = gproc_lib:valid_opts(server_options, []),
     gen_server:start_link({local, ?SERVER}, ?MODULE, [],
 			  [{spawn_opt, SpawnOpts}]).
 
-%% spec(Name::any()) -> true
-%%
 %% @doc Registers a local (unique) name. @equiv reg({n,l,Name})
 %% @end
 %%
+-spec add_local_name(Name::any()) -> true.
 add_local_name(Name)  ->
     ?CATCH_GPROC_ERROR(reg1({n,l,Name}, undefined, [], reg), [Name]).
 
 
-%% spec(Name::any()) -> true
-%%
 %% @doc Registers a global (unique) name. @equiv reg({n,g,Name})
 %% @end
 %%
+-spec add_global_name(Name::any()) -> true.
 add_global_name(Name) ->
     ?CATCH_GPROC_ERROR(reg1({n,g,Name}, undefined, [], reg), [Name]).
 
 
-%% spec(Name::any(), Value::any()) -> true
-%%
 %% @doc Registers a local (non-unique) property. @equiv reg({p,l,Name},Value)
 %% @end
 %%
+-spec add_local_property(Name::any(), Value::any()) -> true.
 add_local_property(Name , Value) ->
     ?CATCH_GPROC_ERROR(reg1({p,l,Name}, Value, [], reg), [Name, Value]).
 
-%% spec(Name::any(), Value::any()) -> true
-%%
 %% @doc Registers a global (non-unique) property. @equiv reg({p,g,Name},Value)
 %% @end
 %%
+-spec add_global_property(Name::any(), Value::any()) -> true.
 add_global_property(Name, Value) ->
     ?CATCH_GPROC_ERROR(reg1({p,g,Name}, Value, [], reg), [Name, Value]).
 
-%% spec(Name::any(), Initial::integer()) -> true
-%%
 %% @doc Registers a local (non-unique) counter. @equiv reg({c,l,Name},Value)
 %% @end
 %%
+-spec add_local_counter(Name::any(), Initial::integer()) -> true.
 add_local_counter(Name, Initial) when is_integer(Initial) ->
     ?CATCH_GPROC_ERROR(reg1({c,l,Name}, Initial, [], reg), [Name, Initial]).
 
 
-%% spec(Name::any(), Initial::integer()) -> true
-%%
 %% @doc Registers a local shared (unique) counter.
 %% @equiv reg_shared({c,l,Name},Value)
 %% @end
 %%
+-spec add_shared_local_counter(Name::any(), Initial::integer()) -> true.
 add_shared_local_counter(Name, Initial) when is_integer(Initial) ->
     reg_shared({c,l,Name}, Initial).
 
 
-%% spec(Name::any(), Initial::integer()) -> true
-%%
 %% @doc Registers a global (non-unique) counter. @equiv reg({c,g,Name},Value)
 %% @end
 %%
+-spec add_global_counter(Name::any(), Initial::integer()) -> true.
 add_global_counter(Name, Initial) when is_integer(Initial) ->
     ?CATCH_GPROC_ERROR(reg1({c,g,Name}, Initial, [], reg), [Name, Initial]).
 
-%% spec(Name::any()) -> true
-%%
 %% @doc Registers a local (unique) aggregated counter.
 %% @equiv reg({a,l,Name})
 %% @end
 %%
+-spec add_local_aggr_counter(Name::any()) -> true.
 add_local_aggr_counter(Name)  -> ?CATCH_GPROC_ERROR(reg1({a,l,Name}), [Name]).
 
-%% spec(Name::any()) -> true
-%%
 %% @doc Registers a global (unique) aggregated counter.
 %% @equiv reg({a,g,Name})
 %% @end
 %%
+-spec add_global_aggr_counter(Name::any()) -> true.
 add_global_aggr_counter(Name) ->
     ?CATCH_GPROC_ERROR(reg1({a,g,Name}), [Name]).
 
 
-%% @spec (Name::any()) -> pid()
-%%
 %% @doc Lookup a local unique name. Fails if there is no such name.
 %% @equiv where({n,l,Name})
 %% @end
 %%
+-spec lookup_local_name(Name::any()) -> pid().
 lookup_local_name(Name)   -> where({n,l,Name}).
 
-%% @spec (Name::any()) -> pid()
-%%
 %% @doc Lookup a global unique name. Fails if there is no such name.
 %% @equiv where({n,g,Name})
 %% @end
 %%
+-spec lookup_global_name (Name::any()) -> pid().
 lookup_global_name(Name)  -> where({n,g,Name}).
 
-%% @spec (Name::any()) -> integer()
-%%
 %% @doc Lookup a local (unique) aggregated counter and returns its value.
 %% Fails if there is no such object.
 %% @equiv where({a,l,Name})
 %% @end
 %%
+-spec lookup_local_aggr_counter(Name::any()) -> integer().
 lookup_local_aggr_counter(Name)  -> lookup_value({a,l,Name}).
 
-%% @spec (Name::any()) -> integer()
-%%
 %% @doc Lookup a global (unique) aggregated counter and returns its value.
 %% Fails if there is no such object.
 %% @equiv lookup_value({a,g,Name})
 %% @end
 %%
+-spec lookup_global_aggr_counter(Name::any()) -> integer().
 lookup_global_aggr_counter(Name) -> lookup_value({a,g,Name}).
 
 
-%% @spec (Property::any()) -> [{pid(), Value}]
-%%
 %% @doc Look up all local (non-unique) instances of a given Property.
 %% Returns a list of {Pid, Value} tuples for all matching objects.
 %% @equiv lookup_values({p, l, Property})
 %% @end
 %%
+-spec lookup_local_properties(Property::any()) -> [{pid(), Value::any()}].
 lookup_local_properties(P)  -> lookup_values({p,l,P}).
 
-%% @spec (Property::any()) -> [{pid(), Value}]
-%%
 %% @doc Look up all global (non-unique) instances of a given Property.
 %% Returns a list of {Pid, Value} tuples for all matching objects.
 %% @equiv lookup_values({p, g, Property})
 %% @end
 %%
+-spec lookup_global_properties(Property::any()) -> [{pid(), Value::any()}].
 lookup_global_properties(P) -> lookup_values({p,g,P}).
 
 
-%% @spec (Counter::any()) -> [{pid(), Value::integer()}]
-%%
 %% @doc Look up all local (non-unique) instances of a given Counter.
 %% Returns a list of {Pid, Value} tuples for all matching objects.
 %% @equiv lookup_values({c, l, Counter})
 %% @end
 %%
+-spec lookup_local_counters(Counter::any()) -> [{pid(), Value::integer()}].
 lookup_local_counters(P)    -> lookup_values({c,l,P}).
 
 
-%% @spec (Counter::any()) -> [{pid(), Value::integer()}]
-%%
 %% @doc Look up all global (non-unique) instances of a given Counter.
 %% Returns a list of {Pid, Value} tuples for all matching objects.
 %% @equiv lookup_values({c, g, Counter})
 %% @end
 %%
+-spec lookup_global_counters(Counter::any()) -> [{pid(), Value::integer()}].
 lookup_global_counters(P)   -> lookup_values({c,g,P}).
 
-%% @spec (Resource::any()) -> [{pid(), Value::integer()}]
-%%
 %% @doc Look up all local (non-unique) instances of a given Resource.
 %% Returns a list of {Pid, Value} tuples for all matching objects.
 %% @equiv lookup_values({r, l, Resource})
 %% @end
 %%
+-spec lookup_local_resources(Resource::any()) -> [{pid(), Value::integer()}].
 lookup_local_resources(P)    -> lookup_values({r,l,P}).
 
 
-%% @spec (Resource::any()) -> [{pid(), Value::integer()}]
-%%
 %% @doc Look up all global (non-unique) instances of a given Resource.
 %% Returns a list of {Pid, Value} tuples for all matching objects.
 %% @equiv lookup_values({r, g, Resource})
 %% @end
 %%
+-spec lookup_global_resources(Resource::any()) -> [{pid(), Value::integer()}].
 lookup_global_resources(P)   -> lookup_values({r,g,P}).
 
-%% @spec get_env(Scope::scope(), App::atom(), Key::atom()) -> term()
 %% @equiv get_env(Scope, App, Key, [app_env])
+-spec get_env(Scope::scope(), App::atom(), Key::atom()) -> term().
 get_env(Scope, App, Key) ->
     get_env(Scope, App, Key, [app_env]).
 
-%% @spec (Scope::scope(), App::atom(), Key::atom(), Strategy) -> term()
-%%   Strategy = [Alternative]
-%%   Alternative = app_env
-%%               | os_env
-%%               | inherit | {inherit, pid()} | {inherit, unique_id()}
-%%               | init_arg
-%%               | {mnesia, ActivityType, Oid, Pos}
-%%               | {default, term()}
-%%               | error
 %% @doc Read an environment value, potentially cached as a `gproc_env' property.
 %%
 %% This function first tries to read the value of a cached property,
@@ -427,18 +407,27 @@ get_env(Scope, App, Key) ->
 %% or at least defined somewhere,
 %% e.g. `get_env(l, mnesia, dir, [app_env, error])'.
 %% @end
+-spec get_env(Scope::scope(), App::atom(), Key::atom(), Strategy) -> term()
+  when Strategy::[Alternative],
+       Alternative::app_env
+                  | os_env
+                  | inherit | {inherit, pid()} | {inherit, unique_id()}
+                  | init_arg
+                  | {mnesia, ActivityType::term(), Oid::term(), Pos::term()}
+                  | {default, term()}
+                  | error.
+%% FIXME: make types narrower?
 get_env(Scope, App, Key, Strategy)
   when Scope==l, is_atom(App), is_atom(Key);
        Scope==g, is_atom(App), is_atom(Key) ->
     do_get_env(Scope, App, Key, Strategy, false).
 
-%% @spec get_set_env(Scope::scope(), App::atom(), Key::atom()) -> term()
 %% @equiv get_set_env(Scope, App, Key, [app_env])
+-spec get_set_env(Scope::scope(), App::atom(), Key::atom()) ->
+          term().
 get_set_env(Scope, App, Key) ->
     get_set_env(Scope, App, Key, [app_env]).
 
-%% @spec get_set_env(Scope::scope(), App::atom(), Key::atom(), Strategy) ->
-%%           Value
 %% @doc Fetch and cache an environment value, if not already cached.
 %%
 %% This function does the same thing as {@link get_env/4}, but also updates the
@@ -448,6 +437,9 @@ get_set_env(Scope, App, Key) ->
 %% @see get_env/4.
 %% @end
 %%
+-spec get_set_env(Scope::scope(), App::atom(), Key::atom(), Strategy::term()) ->
+          Value::any().
+%%FIXME: make more narrow?
 get_set_env(Scope, App, Key, Strategy)
   when Scope==l, is_atom(App), is_atom(Key);
        Scope==g, is_atom(App), is_atom(Key) ->
@@ -461,12 +453,6 @@ do_get_env(Context, App, Key, Alternatives, Set) ->
             Value
     end.
 
-%% @spec set_env(Scope::scope(), App::atom(),
-%%               Key::atom(), Value::term(), Strategy) -> Value
-%%   Strategy = [Alternative]
-%%   Alternative = app_env | os_env | {os_env, VAR}
-%%                | {mnesia, ActivityType, Oid, Pos}
-%%
 %% @doc Updates the cached value as well as underlying environment.
 %%
 %% This function should be exercised with caution, as it affects the larger
@@ -480,6 +466,13 @@ do_get_env(Context, App, Key, Alternatives, Set) ->
 %% to `undefined'.
 %% @end
 %%
+-spec set_env(Scope::scope(), App::atom(),
+              Key::atom(), Value::term(), Strategy) -> Value::term()
+  when Strategy::[Alternative],
+       Alternative::app_env
+                  | os_env | {os_env, VAR::term()}
+                  | {mnesia, ActivityType::term(), Oid::term(), Pos::term()}.
+%% FIXME: Check if types can be more narrow.
 set_env(Scope, App, Key, Value, Strategy)
   when Scope==l, is_atom(App), is_atom(Key);
        Scope==g, is_atom(App), is_atom(Key) ->
@@ -636,22 +629,20 @@ is_string(S) ->
             false
     end.
 
-%% @spec reg(Key::key()) -> true
-%%
 %% @doc
 %% @equiv reg(Key, default(Key), [])
 %% @end
+-spec reg(Key::key()) -> true.
 reg(Key) ->
     ?CATCH_GPROC_ERROR(reg1(valid_key(Key)), [Key]).
 
 reg1(Key) ->
     reg1(Key, default(Key), [], reg).
 
-%% @spec reg_or_locate(Key::key()) -> {pid(), NewValue}
-%%
 %% @doc
 %% @equiv reg_or_locate(Key, default(Key))
 %% @end
+-spec reg_or_locate(Key::key()) -> {pid(), NewValue::term()}.
 reg_or_locate(Key) ->
     ?CATCH_GPROC_ERROR(reg_or_locate1(valid_key(Key)), [Key]).
 
@@ -664,14 +655,12 @@ valid_key(Key) ->
 default({T,_,_}) when T==c -> 0;
 default(_) -> undefined.
 
-%% @spec await(Key::key()) -> {pid(),Value}
 %% @equiv await(Key,infinity)
 %%
+-spec await(Key::key()) -> {pid(),Value::value()}.
 await(Key) ->
     ?CATCH_GPROC_ERROR(await1(Key, infinity), [Key]).
 
-%% @spec await(Key::key(), Timeout) -> {pid(),Value}
-%%   Timeout = integer() | infinity
 %%
 %% @doc Wait for a name or aggregated counter to be registered.
 %% The function raises an exception if the timeout expires. Timeout must be
@@ -682,12 +671,11 @@ await(Key) ->
 %% registered (the difference: await/2 also returns the value).
 %% @end
 %%
+-spec await(Key::key(), Timeout) -> {pid(),Value::value()}
+  when Timeout::integer() | infinity.
 await(Key, Timeout) ->
     ?CATCH_GPROC_ERROR(await1(Key, Timeout), [Key, Timeout]).
 
-%% @spec await(Node::node(), Key::key(), Timeout) -> {pid(),Value}
-%%   Timeout = integer() | infinity
-%%
 %% @doc Wait for a name or aggregated counter to be registered on `Node'.
 %% This function works exactly like {@link await/2}, but queries a remote
 %% node instead. An exception is thrown if `Node' cannot be reached. If gproc
@@ -695,6 +683,8 @@ await(Key, Timeout) ->
 %% down.
 %% @end
 %%
+-spec await(Node::node(), Key::key(), Timeout) -> {pid(),Value::value()}
+  when Timeout::integer() | infinity.
 await(Node, Key, Timeout) when Node == node() ->
     await(Key, Timeout);
 await(Node, Key, Timeout) when is_atom(Node) ->
@@ -763,9 +753,6 @@ request_wait(N, {_,C,_} = Key, Timeout) when C==l; C==g ->
             ?THROW_GPROC_ERROR(timeout)
     end.
 
-%% @spec wide_await(Nodes::[node()], Key::key(), Timeout) -> {pid(),Value}
-%%   Timeout = integer() | infinity
-%%
 %% @doc Wait for a local name to be registered on any of `Nodes'.
 %% This function works rather like {@link await/2}, but queries all nodes in
 %% the `Nodes' list at the same time. The first node to respond with a
@@ -776,6 +763,8 @@ request_wait(N, {_,C,_} = Key, Timeout) when C==l; C==g ->
 %% not running on a given node, this is treated the same as the node being down).
 %% @end
 %%
+-spec wide_await(Nodes::[node()], Key::key(), Timeout) -> {pid(),Value::term()}
+  when Timeout::integer() | infinity.
 wide_await(Nodes, Key, Timeout) ->
     ?CATCH_GPROC_ERROR(wide_await1(Nodes, Key, Timeout), [Nodes, Key, Timeout]).
 
@@ -834,23 +823,21 @@ collect_replies(Refs, Key, TRef) ->
     end.
 
 
-%% @spec nb_wait(Key::key()) -> Ref
-%%
 %% @doc Wait for a name or aggregated counter to be registered.
 %% The caller can expect to receive a message,
 %% {gproc, Ref, registered, {Key, Pid, Value}}, once the name is registered.
 %% @end
 %%
+-spec nb_wait(Key::key()) -> Ref::term(). %FIXME: narrow?
 nb_wait(Key) ->
     ?CATCH_GPROC_ERROR(nb_wait1(Key), [Key]).
 
-%% @spec nb_wait(Node::node(), Key::key()) -> Ref
-%%
 %% @doc Wait for a name or aggregated counter to be registered on `Node'.
 %% The caller can expect to receive a message,
 %% {gproc, Ref, registered, {Key, Pid, Value}}, once the name is registered.
 %% @end
 %%
+-spec nb_wait(Node::node(), Key::key()) -> Ref::term(). % FIXME: narrow?
 nb_wait(Node, Key) ->
     ?CATCH_GPROC_ERROR(nb_wait1(Node, Key), [Node, Key]).
 
@@ -868,27 +855,25 @@ nb_wait1(Node, {T,l,_} = Key) when is_atom(Node), T=:=n;
     call(Node, {await, Key, self()}, l).
 
 
-%% @spec cancel_wait(Key::key(), Ref) -> ok
-%%    Ref = all | reference()
-%%
 %% @doc Cancels a previous call to nb_wait/1
 %%
 %% If `Ref = all', all wait requests on `Key' from the calling process
 %% are canceled.
 %% @end
 %%
+-spec cancel_wait(Key::key(), Ref) -> ok
+  when Ref::all | reference().
 cancel_wait(Key, Ref) ->
     ?CATCH_GPROC_ERROR(cancel_wait1(Key, Ref), [Key, Ref]).
 
-%% @spec cancel_wait(Node::node(), Key::key(), Ref) -> ok
-%%    Ref = all | reference()
-%%
 %% @doc Cancels a previous call to nb_wait/2
 %%
 %% This function works just like {@link cancel_wait/2}, but talks to a remote
 %% node.
 %% @end
 %%
+-spec cancel_wait(Node::node(), Key::key(), Ref) -> ok
+  when Ref::all | reference().
 cancel_wait(N, Key, Ref) when N == node() ->
     cancel_wait(Key, Ref);
 cancel_wait(N, Key, Ref) ->
@@ -924,8 +909,6 @@ cancel_wait_or_monitor1({_,l,_} = Key) ->
 monitor(Key) ->
     ?CATCH_GPROC_ERROR(monitor1(Key, info), [Key]).
 
-%% @spec monitor(key(), monitor_type()) -> reference()
-%%
 %% @doc monitor a registered name
 %% `monitor(Key, info)' works much like erlang:monitor(process, Pid), but monitors
 %% a unique name registered via gproc. A message, `{gproc, unreg, Ref, Key}'
@@ -949,6 +932,7 @@ monitor(Key) ->
 %% monitor types, but `{gproc, registered, Ref, Key}' is also sent when a new
 %% process registers the name.
 %% @end
+-spec monitor(key(), monitor_type()) -> reference().
 monitor(Key, Type) when Type==info;
                         Type==follow;
                         Type==standby ->
@@ -962,12 +946,11 @@ monitor1({T,l,_} = Key, Type) when T==n; T==a; T==rc ->
 monitor1(_, _) ->
     ?THROW_GPROC_ERROR(badarg).
 
-%% @spec demonitor(key(), reference()) -> ok
-%%
 %% @doc Remove a monitor on a registered name
 %% This function is the reverse of monitor/1. It removes a monitor previously
 %% set on a unique name. This function always succeeds given legal input.
 %% @end
+-spec demonitor(key(), reference()) -> ok.
 demonitor(Key, Ref) ->
     ?CATCH_GPROC_ERROR(demonitor1(Key, Ref), [Key, Ref]).
 
@@ -979,16 +962,13 @@ demonitor1({T,l,_} = Key, Ref) when T==n; T==a; T==rc ->
 demonitor1(_, _) ->
     ?THROW_GPROC_ERROR(badarg).
 
-%% @spec reg(Key::key(), Value::value()) -> true
-%%
 %% @doc Register a name or property for the current process
 %%
 %%
+-spec reg(Key::key(), Value::value()) -> true.
 reg(Key, Value) ->
     ?CATCH_GPROC_ERROR(reg1(valid_key(Key), Value, [], reg), [Key, Value]).
 
-%% @spec reg(Key::key(), Value::value(), Attrs::attrs()) -> true
-%%
 %% @doc Register a name or property for the current process
 %% `Attrs' (default: `[]') can be inspected using {@link get_attribute/2}.
 %%
@@ -1030,6 +1010,7 @@ reg(Key, Value) ->
 %% * `{unreg_shared, Type, Name}' - unregister the shared key
 %%  `{Type, Context, Name}'
 %% @end
+-spec reg(Key::key(), Value::value(), Attrs::attrs()) -> true.
 reg(Key, Value, Attrs) ->
     ?CATCH_GPROC_ERROR(reg1(valid_key(Key), Value, Attrs, reg), [Key, Value, Attrs]).
 
@@ -1042,9 +1023,6 @@ ensure_reg(Key) ->
 ensure_reg(Key, Value) ->
     ?CATCH_GPROC_ERROR(reg1(valid_key(Key), Value, ensure), [Key, Value]).
 
-%% @spec ensure_reg(Key::key(), Value::value(), Attrs::attrs()) ->
-%%          new | updated
-%%
 %% @doc Registers a new name or property unless such and entry (by key) has
 %% already been registered by the current process. If `Key' already exists,
 %% the entry will be updated with the given `Value' and `Attrs'.
@@ -1053,7 +1031,7 @@ ensure_reg(Key, Value) ->
 %% first checking whether it has already been registered. An exception is
 %% raised if the name or property is already registered by someone else.
 %% @end
--spec ensure_reg(key(), value(), attrs()) -> new | updated.
+-spec ensure_reg(key(), value(), attrs()) -> new | updated.  %FIXME: Look! narrow!
 ensure_reg(Key, Value, Attrs) ->
     ?CATCH_GPROC_ERROR(reg1(valid_key(Key), Value, Attrs, ensure), [Key, Value, Attrs]).
 
@@ -1090,7 +1068,6 @@ reg_other(Key, Pid) ->
 reg_other(Key, Pid, Value) ->
     ?CATCH_GPROC_ERROR(reg_other1(valid_key(Key), Pid, Value, [], reg), [Key, Pid, Value]).
 
-%% @spec reg_other(Key, Pid, Value, Attrs) -> true
 %% @doc Register name or property to another process.
 %%
 %% Equivalent to {@link reg/3}, but allows for registration of another process
@@ -1107,6 +1084,7 @@ reg_other(Key, Pid, Value) ->
 %% * `r'  - resource properties
 %% * `rc' - resource counters
 %% @end
+-spec reg_other(Key::key(), Pid::pid(), Value::value(), Attrs::attrs()) -> true.
 reg_other(Key, Pid, Value, Attrs) ->
     ?CATCH_GPROC_ERROR(reg_other1(valid_key(Key), Pid, Value, Attrs, reg),
                        [Key, Pid, Value, Attrs]).
@@ -1119,15 +1097,14 @@ ensure_reg_other(Key, Pid, Value) ->
     ?CATCH_GPROC_ERROR(reg_other1(valid_key(Key), Pid, Value, [], ensure),
                        [Key, Pid, Value]).
 
-%% @spec ensure_reg_other(Key::key(), Pid::pid(),
-%%                        Value::value(), Attrs::attrs()) ->
-%%          new | updated
-%%
 %% @doc Register or update name or property to another process.
 %%
 %% Equivalent to {@link reg_other/3}, but allows for registration of another
 %% process instead of the current process. Also see {@link ensure_reg/3}.
 %% @end
+-spec ensure_reg_other(Key::key(), Pid::pid(),
+                       Value::value(), Attrs::attrs()) ->
+          new | updated.
 ensure_reg_other(Key, Pid, Value, Attrs) ->
     ?CATCH_GPROC_ERROR(reg_other1(valid_key(Key), Pid, Value, Attrs, ensure),
                        [Key, Pid, Value, Attrs]).
@@ -1145,19 +1122,16 @@ reg_other1({T,l,_} = Key, Pid, Value, As, Op) when is_pid(Pid) ->
             ?THROW_GPROC_ERROR(badarg)
     end.
 
-%% @spec reg_or_locate(Key::key(), Value) -> {pid(), NewValue}
-%%
 %% @doc Try registering a unique name, or return existing registration.
 %%
 %% This function tries to register the name `Key', if available.
 %% If such a registration object already exists, the pid and value of
 %% the current registration is returned instead.
 %% @end
+-spec reg_or_locate(Key::key(), Value::value()) -> {pid(), NewValue::value()}.
 reg_or_locate(Key, Value) ->
     ?CATCH_GPROC_ERROR(reg_or_locate1(valid_key(Key), Value, self()), [Key, Value]).
 
-%% @spec reg_or_locate(Key::key(), Value, Fun::fun()) -> {pid(), NewValue}
-%%
 %% @doc Spawn a process with a registered name, or return existing registration.
 %%
 %% This function checks whether a local name is registered; if not, it spawns
@@ -1168,6 +1142,7 @@ reg_or_locate(Key, Value) ->
 %% spawned on the caller's node, and the group_leader of the spawned
 %% process is set to the group_leader of the calling process.
 %% @end
+-spec reg_or_locate(Key::key(), Value::value(), Fun::fun()) -> {pid(), NewValue::value()}.
 reg_or_locate({n,_,_} = Key, Value, F) when is_function(F, 0) ->
     ?CATCH_GPROC_ERROR(reg_or_locate1(valid_key(Key), Value, F), [Key, Value, F]).
 
@@ -1179,13 +1154,12 @@ reg_or_locate1({T,l,_} = Key, Value, P) when T==n; T==a; T==rc ->
 reg_or_locate1(_, _, _) ->
     ?THROW_GPROC_ERROR(badarg).
 
-%% @spec reg_shared(Key::key()) -> true
-%%
 %% @doc Register a resource, but don't tie it to a particular process.
 %%
 %% `reg_shared({c,l,C}) -> reg_shared({c,l,C}, 0).'
 %% `reg_shared({a,l,A}) -> reg_shared({a,l,A}, undefined).'
 %% @end
+-spec reg_shared(Key::key()) -> true.
 reg_shared(Key) ->
     ?CATCH_GPROC_ERROR(reg_shared1(valid_key(Key)), [Key]).
 
@@ -1193,8 +1167,6 @@ reg_shared(Key) ->
 reg_shared1({T,_,_} = Key) when T==a; T==p; T==c; T==r ->
     reg_shared(Key, default(Key)).
 
-%% @spec reg_shared(Key::key(), Value) -> true
-%%
 %% @doc Register a resource, but don't tie it to a particular process.
 %%
 %% Shared resources are all unique. They remain until explicitly unregistered
@@ -1208,6 +1180,7 @@ reg_shared1({T,_,_} = Key) when T==a; T==p; T==c; T==r ->
 %% an aggregated counter which is owned by a process.
 %% @end
 %%
+-spec reg_shared(Key::key(), Value::value()) -> true.
 reg_shared(Key, Value) ->
     ?CATCH_GPROC_ERROR(reg_shared1(valid_key(Key), Value, []), [Key, Value]).
 
@@ -1230,14 +1203,13 @@ reg_shared1({rc,l,_} = Key, undefined, As) ->
 reg_shared1(_, _, _) ->
     ?THROW_GPROC_ERROR(badarg).
 
-%% @spec mreg(type(), scope(), [{Key::any(), Value::any()}]) -> true
-%%
 %% @doc Register multiple {Key,Value} pairs of a given type and scope.
 %%
 %% This function is more efficient than calling {@link reg/2} repeatedly.
 %% It is also atomic in regard to unique names; either all names are registered
 %% or none are.
 %% @end
+-spec mreg(type(), scope(), [{Key::any(), Value::any()}]) -> true.
 mreg(T, C, KVL) ->
     ?CATCH_GPROC_ERROR(mreg1(T, C, KVL), [T, C, KVL]).
 
@@ -1255,13 +1227,12 @@ mreg1(p, l, KVL) ->
 mreg1(_, _, _) ->
     ?THROW_GPROC_ERROR(badarg).
 
-%% @spec munreg(type(), scope(), [Key::any()]) -> true
-%%
 %% @doc Unregister multiple Key items of a given type and scope.
 %%
 %% This function is usually more efficient than calling {@link unreg/1}
 %% repeatedly.
 %% @end
+-spec munreg(type(), scope(), [Key::any()]) -> true.
 munreg(T, C, L) ->
     ?CATCH_GPROC_ERROR(munreg1(T, C, L), [T, C, L]).
 
@@ -1292,10 +1263,9 @@ existing(T,Scope,L) ->
     L.
 
 
-%% @spec (Key:: key()) -> true
-%%
 %% @doc Unregister a name or property.
 %% @end
+-spec unreg(Key::key()) -> true.
 unreg(Key) ->
     ?CATCH_GPROC_ERROR(unreg1(Key), [Key]).
 
@@ -1316,13 +1286,13 @@ unreg1(Key) ->
             end
     end.
 
-%% @spec unreg_other(key(), pid()) -> true
 %% @doc Unregister a name registered to another process.
 %%
 %% This function is equivalent to {@link unreg/1}, but specifies another
 %% process as the holder of the registration. An exception is raised if the
 %% name or property is not registered to the given process.
 %% @end
+-spec unreg_other(key(), pid()) -> true.
 unreg_other(Key, Pid) ->
     ?CATCH_GPROC_ERROR(unreg_other1(Key, Pid), [Key, Pid]).
 
@@ -1336,8 +1306,6 @@ unreg_other1({T,l,_} = Key, Pid) when is_pid(Pid) ->
             ?THROW_GPROC_ERROR(badarg)
     end.
 
-%% @spec (Key::key(), Props::[{atom(), any()}]) -> true
-%%
 %% @doc Add/modify `{Key, Value}' attributes associated with a registration.
 %%
 %% Gproc registration objects can have `{Key, Value}' attributes associated with
@@ -1346,6 +1314,7 @@ unreg_other1({T,l,_} = Key, Pid) when is_pid(Pid) ->
 %% Attributs can be retrieved using `gproc:get_attribute/3' or
 %% `gproc:get_attributes/2'.
 %% @end
+-spec set_attributes(Key::key(), Props::[{atom(), any()}]) -> true.
 set_attributes(Key, Props) ->
     ?CATCH_GPROC_ERROR(set_attributes1(Key, Props), [Key, Props]).
 
@@ -1358,10 +1327,9 @@ set_attributes1(Key, Props) ->
 	    call({set_attributes, Key, Props})
     end.
 
-%% @spec (Key:: key()) -> true
-%%
 %% @doc Unregister a shared resource.
 %% @end
+-spec unreg_shared(Key:: key()) -> true.
 unreg_shared(Key) ->
     ?CATCH_GPROC_ERROR(unreg_shared1(Key), [Key]).
 
@@ -1379,7 +1347,6 @@ unreg_shared1(Key) ->
 	    ?THROW_GPROC_ERROR(badarg)
     end.
 
-%% @spec (Key::key(), Props::[{K,V}]) -> true
 %% @doc Add/modify `{Key, Value}' attributes associated with a shared registration.
 %%
 %% Gproc registration objects can have `{Key, Value}' attributes associated with
@@ -1389,6 +1356,7 @@ unreg_shared1(Key) ->
 %% `gproc:get_attributes/2'.
 %% @end
 %%
+-spec set_attributes_shared(Key::key(), Props::[{K::any(),V::any()}]) -> true.
 set_attributes_shared(Key, Attrs) ->
     ?CATCH_GPROC_ERROR(set_attributes_shared1(Key, Attrs), [Key, Attrs]).
 
@@ -1401,10 +1369,9 @@ set_attributes_shared1(Key, Attrs) ->
 	    call({set_attributes_shared, Key, Attrs})
     end.
 
-%% @spec (key(), pid()) -> yes | no
-%%
 %% @doc Behaviour support callback
 %% @end
+-spec register_name(key(), pid()) -> yes | no.
 register_name({n,_,_} = Name, Pid) when Pid == self() ->
     try reg(Name), yes
     catch
@@ -1416,10 +1383,6 @@ register_name({n,_,_} = Name, Pid) when Pid == self() ->
 unregister_name(Key) ->
     unreg(Key).
 
-%% @spec select(Arg) -> [Match] | {[Match], Continuation} | '$end_of_table'
-%%   where  Arg = Continuation
-%%                | sel_pattern()
-%%          Match = {Key, Pid, Value}
 %% @doc Perform a select operation on the process registry
 %%
 %% When Arg = Contination, resume a gproc:select/1 operation
@@ -1439,13 +1402,16 @@ unregister_name(Key) ->
 %% representation for the gproc select operations is given by
 %% {@type headpat()}.
 %% @end
+-spec select(Arg) -> [Match] | {[Match], Continuation} | '$end_of_table'
+  when Arg::Continuation
+          | sel_pattern(),
+       Continuation::ets:continuation(),
+       Match::{Key::key(), Pid::pid(), Value::any()}.
 select({?TAB, _, _, _, _, _, _, _} = Continuation) ->
     ets:select(Continuation);
 select(Pat) ->
     select(all, Pat).
 
-%% @spec (Context::sel_context(), Pat::sel_pattern()) -> [{Key, Pid, Value}]
-%%
 %% @doc Perform a select operation with limited context on the process registry
 %%
 %% The physical representation in the registry may differ from the above,
@@ -1460,15 +1426,16 @@ select(Pat) ->
 %% In this case, specifying a Context will allow gproc to perform some
 %% variable substitution and ensure that the scan is limited.
 %% @end
+-spec select(Context::sel_context(), Pat::sel_pattern()) -> [{Key::key(), Pid::pid(), Value::value()}].
 select(Context, Pat) ->
     ets:select(?TAB, pattern(Pat, Context)).
 
-%% @spec (Context::context(), Pat::sel_patten(), Limit::integer()) ->
-%%          {[Match],Continuation} | '$end_of_table'
 %% @doc Like {@link select/2} but returns Limit objects at a time.
 %%
 %% See [http://www.erlang.org/doc/man/ets.html#select-3].
 %% @end
+-spec select(Context::context(), Pat::sel_patten(), Limit::integer()) ->
+          {[Match],Continuation} | '$end_of_table'
 select(Context, Pat, Limit) ->
     ets:select(?TAB, pattern(Pat, Context), Limit).
 
